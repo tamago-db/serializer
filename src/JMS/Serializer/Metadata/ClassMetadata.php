@@ -177,15 +177,20 @@ class ClassMetadata extends MergeableClassMetadata
 
             $this->discriminatorValue = $typeValue;
 
-            if (isset($this->propertyMetadata[$this->discriminatorFieldName])
-                    && ! $this->propertyMetadata[$this->discriminatorFieldName] instanceof StaticPropertyMetadata) {
-                throw new \LogicException(sprintf(
-                    'The discriminator field name "%s" of the base-class "%s" conflicts with a regular property of the sub-class "%s".',
-                    $this->discriminatorFieldName,
-                    $this->discriminatorBaseClass,
-                    $this->name
-                ));
-            }
+            // FIXME: This test will fail because we want to save the discriminator field as we need the value
+            // when we deserialize, but because we are extending the base class with the discriminator, it will
+            // always throw the exception, for some reason, JMS won't automatically save the field used in the
+            // discriminator annotation.
+
+//            if (isset($this->propertyMetadata[$this->discriminatorFieldName])
+//                    && ! $this->propertyMetadata[$this->discriminatorFieldName] instanceof StaticPropertyMetadata) {
+//                throw new \LogicException(sprintf(
+//                    'The discriminator field name "%s" of the base-class "%s" conflicts with a regular property of the sub-class "%s".',
+//                    $this->discriminatorFieldName,
+//                    $this->discriminatorBaseClass,
+//                    $this->name
+//                ));
+//            }
 
             $discriminatorProperty = new StaticPropertyMetadata(
                 $this->name,
@@ -193,6 +198,11 @@ class ClassMetadata extends MergeableClassMetadata
                 $typeValue
             );
             $discriminatorProperty->serializedName = $this->discriminatorFieldName;
+
+            // Make sure we add the groups before replacing the property metadata with the discriminator
+            // if we don't do this, it will always be null and will fail to save
+            $discriminatorProperty->groups = $this->propertyMetadata[$this->discriminatorFieldName]->groups;
+
             $this->propertyMetadata[$this->discriminatorFieldName] = $discriminatorProperty;
         }
 
